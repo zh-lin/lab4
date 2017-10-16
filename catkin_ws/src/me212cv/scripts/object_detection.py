@@ -57,8 +57,8 @@ def main():
             # Task 3: Use Kinect depth data
             #    Subscribe to both RGB and Depth images with a Synchronizer
             image_sub = message_filters.Subscriber("/camera/rgb/image_rect_color", Image)
-            depth_sub = message_filters.Subscriber("/camera/depth_registered/image", Image)
-
+            #depth_sub = message_filters.Subscriber("/camera/depth_registered/image_raw", Image)    #Asus Xtion
+            depth_sub = message_filters.Subscriber("/camera/depth/image", Image)  #/camera/depth_registered/sw_registered/image_rect #Realsense
             ts = message_filters.ApproximateTimeSynchronizer([image_sub, depth_sub], 10, 0.5)
             ts.registerCallback(rosRGBDCallBack)
 
@@ -114,6 +114,7 @@ def rosHSVProcessCallBack(msg):
 # Task 2 object detection code
 def HSVObjectDetection(cv_image, toPrint = True):
     # convert image to HSV color space
+     # convert image to HSV color space
     # hsv_image = ??
     
     # define range of red color in HSV
@@ -125,12 +126,14 @@ def HSVObjectDetection(cv_image, toPrint = True):
     
     # mask_eroded         = ??
     # mask_eroded_dilated = ??
+    # convert image to HSV color space
     
     if toPrint:
         print 'hsv', hsv_image[240][320] # the center point hsv
 
     showImage(cv_image, mask_eroded, mask_eroded_dilated)
-    image,contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+    #image,contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+    contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
     return contours, mask_eroded_dilated
 
 # Task 3 callback
@@ -146,24 +149,30 @@ def rosRGBDCallBack(rgb_data, depth_data):
 
     for cnt in contours:
         xp,yp,w,h = cv2.boundingRect(cnt)
-        
+        #print "y", yp, "x", xp 
         # Get depth value from depth image, need to make sure the value is in the normal range 0.1-10 meter
-        if not math.isnan(cv_depthimage2[int(yp)][int(xp)]) and cv_depthimage2[int(yp)][int(xp)] > 0.1 and cv_depthimage2[int(yp)][int(xp)] < 10.0:
-            zc = cv_depthimage2[int(yp)][int(xp)]
-            print 'zc', zc
+        if not math.isnan(cv_depthimage2[int(yp+h/2)][int(xp+w/2)]) and cv_depthimage2[int(yp+h/2)][int(xp+w/2)] > 0.1 and cv_depthimage2[int(yp+h/2)][int(xp+w/2)] < 10.0:
+            #zc = cv_depthimage2[int(yp)][int(xp)]
+	    zc = cv_depthimage2[int(yp+h/2)][int(xp+w/2)]
+            cv2.rectangle(cv_image,(xp,yp),(xp+w,yp+h),[0,255,255],2)
+            cv2.circle(cv_image,(int(xp+w/2),int(yp+h/2)),5,(55,255,155),4)
+        #    print "zc", zc
         else:
             continue
             
         centerx, centery = xp+w/2, yp+h/2
-        cv2.rectangle(cv_image,(xp,yp),(xp+w,yp+h),[0,255,255],2)
-        
+        #cv2.rectangle(cv_image,(xp,yp),(xp+w,yp+h),[0,255,255],2)
+        X1 = getXYZ(xp+w/2, yp+h/2, zc, fx, fy, cx, cy)
+        print "x:",X1[0],"y:",X1[1],"z:",X1[2]
         showPyramid(centerx, centery, zc, w, h)
+    img_pub1.publish(cv_bridge.cv2_to_imgmsg(cv_image, encoding="passthrough"))
 
 def getXYZ(xp, yp, zc, fx,fy,cx,cy):
     # xn = ??
     # yn = ??
     # xc = ??
     # yc = ??
+    # zc = ??
     return (xc,yc,zc)
 
 
@@ -195,10 +204,10 @@ def showPyramid(xp, yp, zc, w, h):
     X2 = getXYZ(xp-w/2, yp+h/2, zc, fx, fy, cx, cy)
     X3 = getXYZ(xp+w/2, yp+h/2, zc, fx, fy, cx, cy)
     X4 = getXYZ(xp+w/2, yp-h/2, zc, fx, fy, cx, cy)
-    vis_pub.publish(createTriangleListMarker(1, [X1, X2, X3, X4], rgba = [1,0,0,1], frame_id = '/camera'))
+    vis_pub.publish(createTriangleListMarker(1, [X1, X2, X3, X4], rgba = [1,0,0,1], frame_id = "/camera"))
 
-# Create a list of Triangle markers for visualization
-def createTriangleListMarker(marker_id, points, rgba, frame_id = '/camera'):
+# Create a list of Triangle markers for visualizationi
+def createTriangleListMarker(marker_id, points, rgba, frame_id = "/camera"):
     marker = Marker()
     marker.header.frame_id = frame_id
     marker.type = marker.TRIANGLE_LIST
