@@ -42,8 +42,8 @@ cx = msg.P[2]
 cy = msg.P[6]
 
 def main():
-    useHSV   = True
-    useDepth = True
+    useHSV   = False
+    useDepth = False
     if not useHSV:
         # Task 1
         # subscribe to image
@@ -220,10 +220,10 @@ def showPyramid(xp, yp, zc, w, h):
     X2 = getXYZ(xp-w/2, yp+h/2, zc, fx, fy, cx, cy)
     X3 = getXYZ(xp+w/2, yp+h/2, zc, fx, fy, cx, cy)
     X4 = getXYZ(xp+w/2, yp-h/2, zc, fx, fy, cx, cy)
-    vis_pub.publish(createTriangleListMarker(1, [X1, X2, X3, X4], rgba = [1,0,0,1], frame_id = "/camera"))
+    vis_pub.publish(createTriangleListMarker(1, [X1, X2, X3, X4], rgba = [1,0,0,1], frame_id = "/camera_link"))
 
 # Create a list of Triangle markers for visualizationi
-def createTriangleListMarker(marker_id, points, rgba, frame_id = "/camera"):
+def createTriangleListMarker(marker_id, points, rgba, frame_id = "/camera_link"):
     marker = Marker()
     marker.header.frame_id = frame_id
     marker.type = marker.TRIANGLE_LIST
