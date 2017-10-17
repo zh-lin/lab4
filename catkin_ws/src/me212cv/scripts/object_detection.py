@@ -42,8 +42,8 @@ cx = msg.P[2]
 cy = msg.P[6]
 
 def main():
-    useHSV   = False
-    useDepth = False
+    useHSV   = True
+    useDepth = True
     if not useHSV:
         # Task 1
         # subscribe to image
@@ -58,7 +58,7 @@ def main():
             #    Subscribe to both RGB and Depth images with a Synchronizer
             image_sub = message_filters.Subscriber("/camera/rgb/image_rect_color", Image)
             #depth_sub = message_filters.Subscriber("/camera/depth_registered/image_raw", Image)    #Asus Xtion
-            depth_sub = message_filters.Subscriber("/camera/depth/image", Image)  #/camera/depth_registered/sw_registered/image_rect #Realsense
+            depth_sub = message_filters.Subscriber("/camera/depth_registered/sw_registered/image_rect", Image)  #/camera/depth_registered/sw_registered/image_rect #Realsense
             ts = message_filters.ApproximateTimeSynchronizer([image_sub, depth_sub], 10, 0.5)
             ts.registerCallback(rosRGBDCallBack)
 
@@ -127,13 +127,24 @@ def HSVObjectDetection(cv_image, toPrint = True):
     # mask_eroded         = ??
     # mask_eroded_dilated = ??
     # convert image to HSV color space
+    hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
     
+    # define range of red color in HSV
+    lower_red = np.array([170,50,50])
+    upper_red = np.array([180,255,255])
+
+    # Threshold the HSV image to get only red colors
+
+    mask = cv2.inRange(hsv_image, lower_red, upper_red)
+    
+    mask_eroded = cv2.erode(mask, None, iterations = 3)
+    mask_eroded_dilated = cv2.dilate(mask_eroded, None, iterations = 10)
     if toPrint:
         print 'hsv', hsv_image[240][320] # the center point hsv
 
     showImage(cv_image, mask_eroded, mask_eroded_dilated)
-    #image,contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-    contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+    contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE) #ubuntu 14.04
+    #image,contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE) #ubuntu 16.04
     return contours, mask_eroded_dilated
 
 # Task 3 callback
@@ -173,6 +184,11 @@ def getXYZ(xp, yp, zc, fx,fy,cx,cy):
     # xc = ??
     # yc = ??
     # zc = ??
+    inv_fx = 1.0/fx
+    inv_fy = 1.0/fy
+    xc = zc
+    yc = -(xp-cx) *  zc * inv_fx
+    zc = -(yp-cy) *  zc * inv_fy
     return (xc,yc,zc)
 
 
