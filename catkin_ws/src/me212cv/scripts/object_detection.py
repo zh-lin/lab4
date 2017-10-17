@@ -179,17 +179,17 @@ def rosRGBDCallBack(rgb_data, depth_data):
     img_pub1.publish(cv_bridge.cv2_to_imgmsg(cv_image, encoding="passthrough"))
 
 def getXYZ(xp, yp, zc, fx,fy,cx,cy):
-    # xn = ??
-    # yn = ??
-    # xc = ??
-    # yc = ??
-    # zc = ??
-    inv_fx = 1.0/fx
-    inv_fy = 1.0/fy
-    xc = zc
-    yc = -(xp-cx) *  zc * inv_fx
-    zc = -(yp-cy) *  zc * inv_fy
-    return (xc,yc,zc)
+    #### Definition:
+    # cx, cy : image center(pixel)
+    # fx, fy : focal length
+    # xp, yp: index of the depth image
+    # zc: depth
+    ####
+    # Note : please convert depth "zc" to real world coordinate "x, y, z"
+    # x = ??
+    # y = ??
+    # z = ??
+    return (x,y,z)
 
 
 def showImage(cv_image, mask_erode_image, mask_image):
